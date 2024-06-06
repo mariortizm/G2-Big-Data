@@ -1,17 +1,23 @@
 import random
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 import geopandas as gpd
 from shapely.geometry import Point
-from hdfs import InsecureClient
-import time
+import socket
 import json
+import time
 
-# Conectar al cliente HDFS
-client = InsecureClient('http://localhost:50070', user='root')
+# Conectar al servidor de socket
+HOST = 'localhost'  # Dirección IP del servidor
+PORT = 65432        # Puerto del servidor
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+print(f"Intentando conectar a {HOST}:{PORT}")
+client_socket.connect((HOST, PORT))
+print("Conexión establecida")
 
 # Leer el archivo parquet y convertirlo en un GeoDataFrame
-gdf = gpd.read_parquet('/workspace/base.data/medellin_neighborhoods.parquet')
+gdf = gpd.read_parquet('./base.data/medellin_neighborhoods.parquet')
 
 # Crear una función para generar un punto aleatorio dentro de un polígono
 def generate_random_point_in_polygon(polygon):
@@ -42,7 +48,7 @@ batch_duration_minutes = 5
 batch_duration_seconds = batch_duration_minutes * 60
 events_per_batch = batch_duration_seconds // interval_seconds
 
-# Generar y guardar eventos en HDFS en intervalos regulares
+# Generar y enviar eventos al servidor de socket en intervalos regulares
 while True:
     events = []
     start_time = datetime.now()
@@ -50,9 +56,6 @@ while True:
         event = generate_random_event()
         events.append(event)
         time.sleep(interval_seconds)
-    file_name = f"/workspace/bronze/events_{start_time.strftime('%Y%m%d%H%M%S')}.json"
-    client.write(file_name, data=json.dumps(events, indent=2))
-    print(f"Batch saved: {file_name} with {len(events)} events")
-
-
-
+    data = json.dumps(events)
+    client_socket.sendall(data.encode())
+    print(f"Batch sent: {len(events)} events")
