@@ -12,7 +12,7 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 # Leer el archivo parquet desde HDFS
-# df = spark.read.parquet("hdfs://172.17.0.2:9000/merged_data"
+# df = spark.read.parquet("hdfs://172.17.0.2:9000/merged_data")
 #--------------------------------------------------------------------------------------------
 # Definir el esquema inicial del DataFrame
 schema_initial = StructType([
