@@ -1,60 +1,42 @@
 from pyspark.sql import SparkSession
 
-# Crear una sesión de Spark
+# Configuración de la sesión de Spark
 spark = SparkSession.builder \
-    .appName("SparkTableCreation") \
-    .config("spark.sql.warehouse.dir", "hdfs://172.17.0.2:9000/user/spark/warehouse") \
+    .appName("Read Parquet and Create Tables") \
+    .config("spark.hadoop.fs.defaultFS", "hdfs://172.17.0.2:9000") \
     .getOrCreate()
 
-# Crear la tabla silver_data
-spark.sql("""
-    CREATE TABLE IF NOT EXISTS silver_data (
-      latitude FLOAT,
-      longitude FLOAT,
-      date STRING,
-      customer_id STRING,
-      employee_id STRING,
-      quantity_products INT,
-      order_id STRING,
-      day STRING,
-      month STRING,
-      year STRING,
-      time STRING,
-      comuna STRING,
-      codigo_postal STRING
-    )
-    USING PARQUET
-    LOCATION 'hdfs://172.17.0.2:9000/silver_data'
-""")
+# Carga de archivos Parquet desde HDFS
+silver_data_df = spark.read.parquet("hdfs://172.17.0.2:9000/silver_data")
+customers_df = spark.read.parquet("hdfs://172.17.0.2:9000/customers")
+employees_df = spark.read.parquet("hdfs://172.17.0.2:9000/employees")
 
-# Crear la tabla customers
-spark.sql("""
-    CREATE TABLE IF NOT EXISTS customers (
-      customer_id BIGINT,
-      name STRING,
-      phone STRING,
-      email STRING,
-      address STRING
-    )
-    USING PARQUET
-    LOCATION 'hdfs://172.17.0.2:9000/customers'
-""")
+# Creación de tablas temporales para SQL
+silver_data_df.createOrReplaceTempView("silver_data")
+customers_df.createOrReplaceTempView("customers")
+employees_df.createOrReplaceTempView("employees")
 
-# Crear la tabla employees
-spark.sql("""
-    CREATE TABLE IF NOT EXISTS employees (
-      employee_id BIGINT,
-      name STRING,
-      phone STRING,
-      email STRING,
-      address STRING,
-      comission DOUBLE
-    )
-    USING PARQUET
-    LOCATION 'hdfs://172.17.0.2:9000/employees'
-""")
+# Consulta SQL
+query = """
+SELECT 
+    sd.order_id AS Numero_de_orden, 
+    sd.customer_id AS Identificacion_cliente, 
+    sd.codigo_postal AS Codigo_postal, 
+    sd.quantity_products AS Cantidad_de_productos,
+    c.direccion AS Direccion_cliente
+FROM 
+    silver_data sd
+JOIN 
+    customers c
+ON 
+    sd.customer_id = c.customer_id;
+"""
 
-# Detener la sesión de Spark
+result_df = spark.sql(query)
+
+# Mostrar el resultado de la consulta
+result_df.show()
+
+# Para detener la sesión de Spark
 spark.stop()
-
 

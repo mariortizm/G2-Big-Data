@@ -3,12 +3,20 @@ from shapely.geometry import Point
 import random
 import socket
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 import json
+import pandas as pd
 
 # Cargar GeoDataFrame
 gdf = gpd.read_parquet('./base.data/medellin_neighborhoods.parquet')
+
+# Cargar employee_id y customer_id desde archivos parquet
+employees_df = pd.read_parquet('./base.data/employees.parquet')
+customers_df = pd.read_parquet('./base.data/customers.parquet')
+
+employee_ids = employees_df['employee_id'].tolist()
+customer_ids = customers_df['customer_id'].tolist()
 
 def generate_random_point_in_polygon(polygon):
     minx, miny, maxx, maxy = polygon.bounds
@@ -17,22 +25,29 @@ def generate_random_point_in_polygon(polygon):
         if polygon.contains(pnt):
             return pnt
 
+def generate_random_date(start_date, end_date):
+    start_timestamp = int(start_date.timestamp())
+    end_timestamp = int(end_date.timestamp())
+    random_timestamp = random.randint(start_timestamp, end_timestamp)
+    return datetime.fromtimestamp(random_timestamp)
+
 def generate_random_event():
     polygon = random.choice(gdf['geometry'])
     pnt = generate_random_point_in_polygon(polygon)
+    random_date = generate_random_date(datetime(2021, 1, 1, 0, 0, 0), datetime(2024, 6, 21, 0, 0, 0))
     return {
         "latitude": pnt.y,
         "longitude": pnt.x,
-        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "customer_id": random.randint(1000, 9999),
-        "employee_id": random.randint(1000, 9999),
+        "date": random_date.strftime("%Y-%m-%d %H:%M:%S"),
+        "customer_id": random.choice(customer_ids),
+        "employee_id": random.choice(employee_ids),
         "quantity_products": random.randint(1, 100),
         "order_id": str(uuid.uuid4())
     }
 
-interval_seconds = 2
+interval_seconds = 30
 
-def send_event_to_spark(host='localhost', port=50020):  
+def send_event_to_spark(host='localhost', port=50014):  
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         server_socket.bind((host, port))
         server_socket.listen()

@@ -6,7 +6,7 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 # Ruta del directorio en HDFS donde están los archivos Parquet
-hdfs_directory = "hdfs://172.17.0.2:9000/merged_data"
+hdfs_directory = "hdfs://172.17.0.2:9000/silver_data"
 
 # Leer todos los archivos Parquet del directorio en un DataFrame
 df = spark.read.parquet(hdfs_directory)
