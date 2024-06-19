@@ -1,3 +1,4 @@
+import subprocess
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, split
 from pyspark.sql.types import StringType, StructType, StructField, FloatType, IntegerType
@@ -5,6 +6,19 @@ import geopandas as gpd
 import pandas as pd
 from shapely.geometry import Point
 from pyproj import Transformer
+
+# Función para ejecutar comandos de shell
+def run_command(command):
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        raise Exception(f"Command failed with error {stderr.decode('utf-8')}")
+    return stdout.decode('utf-8')
+
+# Crear directorio en HDFS y subir archivos locales
+run_command("hdfs dfs -mkdir -p /user/root/base.data")
+run_command("hdfs dfs -put ./base.data/customers.parquet /user/root/base.data/")
+run_command("hdfs dfs -put ./base.data/employees.parquet /user/root/base.data/")
 
 # Inicializar Spark
 spark = SparkSession.builder \
@@ -88,8 +102,8 @@ schema_final = StructType([
     StructField("latitude", FloatType(), True),
     StructField("longitude", FloatType(), True),
     StructField("date", StringType(), True),
-    StructField("customer_id", IntegerType(), True),
-    StructField("employee_id", IntegerType(), True),
+    StructField("customer_id", StringType(), True),
+    StructField("employee_id", StringType(), True),
     StructField("quantity_products", IntegerType(), True),
     StructField("order_id", StringType(), True),
     StructField("day", StringType(), True),
@@ -106,5 +120,14 @@ df_spark = spark.createDataFrame(df_pandas, schema=schema_final)
 # Escribir el DataFrame resultante a HDFS en formato Parquet con compresión Gzip usando append
 df_spark.write.mode('append').parquet("hdfs://172.17.0.2:9000/silver_data", compression='gzip')
 
+# Lectura y escritura del archivo customers.parquet
+customers_df = spark.read.parquet("./base.data/customers.parquet")
+customers_df.write.mode('append').parquet("hdfs://172.17.0.2:9000/customers", compression='gzip')
+
+# Lectura y escritura del archivo employees.parquet
+employees_df = spark.read.parquet("./base.data/employees.parquet")
+employees_df.write.mode('append').parquet("hdfs://172.17.0.2:9000/employees", compression='gzip')
+
 spark.stop()
+
 
