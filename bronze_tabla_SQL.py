@@ -9,8 +9,8 @@ spark = SparkSession.builder \
 # Carga de archivos Parquet desde HDFS
 bronze_data_df = spark.read.parquet("hdfs://172.17.0.2:9000/bronze_data")
 
-# Guardar el DataFrame como tabla persistente con modo "overwrite"
-bronze_data_df.write.mode("overwrite").saveAsTable("default.bronze_data_table")
+# Guardar el DataFrame como tabla persistente con modo "append"
+bronze_data_df.write.mode("append").saveAsTable("default.bronze_data_table")
 
 # Realizar consultas SQL directamente sobre la tabla persistente
 query = """

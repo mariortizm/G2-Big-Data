@@ -11,10 +11,10 @@ silver_data_df = spark.read.parquet("hdfs://172.17.0.2:9000/silver_data")
 customers_df = spark.read.parquet("hdfs://172.17.0.2:9000/customers")
 employees_df = spark.read.parquet("hdfs://172.17.0.2:9000/employees")
 
-# Guardar los DataFrames como tablas persistentes con modo "overwrite"
-silver_data_df.write.mode("overwrite").saveAsTable("default.silver_data_table")
-customers_df.write.mode("overwrite").saveAsTable("default.customers_table")
-employees_df.write.mode("overwrite").saveAsTable("default.employees_table")
+# Guardar los DataFrames como tablas persistentes con modo "append"
+silver_data_df.write.mode("append").saveAsTable("default.silver_data_table")
+customers_df.write.mode("append").saveAsTable("default.customers_table")
+employees_df.write.mode("append").saveAsTable("default.employees_table")
 
 # Realizar consultas SQL directamente sobre las tablas persistentes
 query = """
