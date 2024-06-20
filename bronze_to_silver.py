@@ -21,6 +21,9 @@ try:
            .withColumn("year", split(col("date"), " ")[0].substr(0, 4).cast(StringType())) \
            .withColumn("time", split(col("date"), " ")[1].cast(StringType()))
 
+    # Eliminar la columna 'date'
+    df = df.drop("date")
+
     # Leer el archivo de comunas
     neighborhoods_gdf = gpd.read_parquet("./base.data/medellin_neighborhoods.parquet")
 
@@ -64,7 +67,6 @@ try:
     schema_final = StructType([
         StructField("latitude", FloatType(), True),
         StructField("longitude", FloatType(), True),
-        StructField("date", StringType(), True),
         StructField("customer_id", IntegerType(), True),
         StructField("employee_id", IntegerType(), True),
         StructField("quantity_products", IntegerType(), True),

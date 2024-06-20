@@ -11,23 +11,25 @@ silver_data_df = spark.read.parquet("hdfs://172.17.0.2:9000/silver_data")
 customers_df = spark.read.parquet("hdfs://172.17.0.2:9000/customers")
 employees_df = spark.read.parquet("hdfs://172.17.0.2:9000/employees")
 
-# Creación de tablas temporales para SQL
-silver_data_df.createOrReplaceTempView("silver_data")
-customers_df.createOrReplaceTempView("customers")
-employees_df.createOrReplaceTempView("employees")
+# Guardar los DataFrames como tablas persistentes con modo "overwrite"
+silver_data_df.write.mode("overwrite").saveAsTable("default.silver_data_table")
+customers_df.write.mode("overwrite").saveAsTable("default.customers_table")
+employees_df.write.mode("overwrite").saveAsTable("default.employees_table")
 
-# Consulta SQL
+# Realizar consultas SQL directamente sobre las tablas persistentes
 query = """
 SELECT 
-    sd.order_id AS Numero_de_orden, 
-    sd.customer_id AS Identificacion_cliente, 
-    sd.codigo_postal AS Codigo_postal, 
+    sd.order_id AS Numero_de_orden,  
     sd.quantity_products AS Cantidad_de_productos,
-    c.direccion AS Direccion_cliente
+    c.name AS Nombre_cliente,
+    c.phone AS Telefono_cliente,
+    c.address AS Direccion_cliente,
+    sd.comuna AS Comuna,
+    sd.codigo_postal AS Codigo_postal
 FROM 
-    silver_data sd
+    silver_data_table sd
 JOIN 
-    customers c
+    customers_table c
 ON 
     sd.customer_id = c.customer_id;
 """
@@ -39,4 +41,5 @@ result_df.show()
 
 # Para detener la sesión de Spark
 spark.stop()
+
 
