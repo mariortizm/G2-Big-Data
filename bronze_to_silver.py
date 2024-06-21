@@ -82,6 +82,9 @@ try:
     # Convertir de nuevo a Spark DataFrame con el esquema definido
     df_spark = spark.createDataFrame(df_pandas, schema=schema_final)
 
+    # Eliminar duplicados
+    df_spark = df_spark.dropDuplicates(["order_id"])
+
     # Escribir el DataFrame resultante a HDFS en formato Parquet con compresión Gzip usando append
     df_spark.write.mode('append').parquet("hdfs://172.17.0.2:9000/silver_data", compression='gzip')
 
@@ -90,3 +93,5 @@ except Exception as e:
 
 finally:
     spark.stop()
+
+
